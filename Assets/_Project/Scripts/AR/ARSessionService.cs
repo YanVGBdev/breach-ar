@@ -241,17 +241,5 @@ namespace BreachAR.AR
         public bool HasGyroscope;
     }
 
-    /// <summary>
-    /// Scanned surface data
-    /// </summary>
-    [System.Serializable]
-    public class ScannedSurface
-    {
-        public string SurfaceId;
-        public SurfaceType Type;
-        public float Area;
-        public Vector3 Position;
-        public Vector3 Normal;
-        public Transform Anchor;
-    }
+
 }

@@ -18,11 +18,23 @@ namespace BreachAR.Core
 
         protected override void Configure(IContainerBuilder builder)
         {
-            // AR
+            // =====================================================================
+            // AR Services
+            // =====================================================================
             builder.Register<AR.ARSessionService>(Lifetime.Singleton);
             builder.Register<AR.CorePlacementService>(Lifetime.Singleton);
+            builder.Register<AR.DeviceCompatibilityService>(Lifetime.Singleton);
+            builder.Register<AR.PoissonDiscDistribution>(Lifetime.Singleton);
+            builder.Register<AR.TrackingRecoveryService>(Lifetime.Singleton);
+            builder.Register<AR.OcclusionService>(Lifetime.Singleton);
+            builder.Register<AR.DynamicMeshCollider>(Lifetime.Singleton);
+            builder.Register<AR.PlaneDetectionService>(Lifetime.Singleton);
+            builder.Register<AR.RiftAnchorManager>(Lifetime.Singleton);
 
-            // Backend
+            // =====================================================================
+            // Backend Services
+            // =====================================================================
+            builder.Register<Backend.SupabaseService>(Lifetime.Singleton);
             builder.Register<Backend.SaveService>(Lifetime.Singleton);
             builder.Register<Backend.EconomyService>(Lifetime.Singleton);
             builder.Register<Backend.RemoteConfigService>(Lifetime.Singleton);
@@ -30,31 +42,57 @@ namespace BreachAR.Core
             builder.Register<Backend.ScoreValidator>(Lifetime.Singleton);
             builder.Register<Backend.RateLimiter>(Lifetime.Singleton);
             builder.Register<Backend.CloudSyncService>(Lifetime.Singleton);
+            builder.Register<Backend.PrivacyService>(Lifetime.Singleton);
+            builder.Register<Backend.BackupService>(Lifetime.Singleton);
+            builder.Register<Backend.PlayerEconomyService>(Lifetime.Singleton);
+            builder.Register<Backend.IAPValidationService>(Lifetime.Singleton);
+            builder.Register<Backend.EnvironmentConfigService>(Lifetime.Singleton);
 
-            // Analytics
+            // =====================================================================
+            // Analytics Services
+            // =====================================================================
             builder.Register<Analytics.AnalyticsService>(Lifetime.Singleton);
+            builder.Register<Analytics.PerformanceTelemetryService>(Lifetime.Singleton);
 
-            // AI
+            // =====================================================================
+            // AI Services
+            // =====================================================================
             builder.Register<AI.DifficultyDirector>(Lifetime.Singleton);
             builder.Register<AI.WaveGenerator>(Lifetime.Singleton);
             builder.Register<AI.RiftSpawnDirector>(Lifetime.Singleton);
 
-            // Physics
+            // =====================================================================
+            // Physics Services
+            // =====================================================================
             builder.Register<Physics.PhysicsManager>(Lifetime.Singleton);
             builder.Register<Physics.LaunchSystem>(Lifetime.Singleton);
 
-            // Core
+            // =====================================================================
+            // Core Services
+            // =====================================================================
             builder.Register<DeviceTierDetector>(Lifetime.Singleton);
             builder.Register<GameManager>(Lifetime.Singleton);
+            builder.Register<GraphicsQualityService>(Lifetime.Singleton);
 
-            // Utils
+            // =====================================================================
+            // Utility Services
+            // =====================================================================
             builder.Register<Utils.EventDispatcher>(Lifetime.Singleton);
             builder.Register<Utils.InputHandler>(Lifetime.Singleton);
             builder.Register<Utils.SceneLoader>(Lifetime.Singleton);
             builder.Register<Utils.NotificationManager>(Lifetime.Singleton);
             builder.Register<Utils.CoroutineHelper>(Lifetime.Singleton);
+            builder.Register<Utils.GCReductionService>(Lifetime.Singleton);
+            builder.Register<Utils.MemoryProfilerService>(Lifetime.Singleton);
+            builder.Register<Utils.BuildSizeOptimizer>(Lifetime.Singleton);
+            builder.Register<Utils.MobileShaderOptimizer>(Lifetime.Singleton);
+            builder.Register<Utils.MeshColliderOptimizer>(Lifetime.Singleton);
+            builder.Register<Utils.TextureOptimizer>(Lifetime.Singleton);
+            builder.Register<AR.DepthAPIOptimizer>(Lifetime.Singleton);
 
+            // =====================================================================
             // AudioManager (if prefab provided)
+            // =====================================================================
             if (audioManagerPrefab != null)
             {
                 builder.RegisterComponent(audioManagerPrefab.GetComponent<Audio.AudioManager>());
@@ -64,7 +102,9 @@ namespace BreachAR.Core
                 builder.Register<Audio.AudioManager>(Lifetime.Singleton);
             }
 
+            // =====================================================================
             // PoolManager (if prefab provided)
+            // =====================================================================
             if (poolManagerPrefab != null)
             {
                 builder.RegisterComponent(poolManagerPrefab.GetComponent<Utils.PoolManager>());
@@ -74,7 +114,7 @@ namespace BreachAR.Core
                 builder.Register<Utils.PoolManager>(Lifetime.Singleton);
             }
 
-            Debug.Log("[VContainer] ProjectLifetimeScope configured");
+            Debug.Log("[VContainer] ProjectLifetimeScope configured with all services");
         }
     }
 }

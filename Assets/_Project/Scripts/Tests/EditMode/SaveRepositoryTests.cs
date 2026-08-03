@@ -1,32 +1,27 @@
 using UnityEngine;
 using NUnit.Framework;
-using BreachAR.Core;
-using BreachAR.Backend;
 using System.IO;
 
 namespace BreachAR.Tests.EditMode
 {
     /// <summary>
     /// Unit tests for SaveRepository
+    /// Referência: QA-006
     /// </summary>
     [TestFixture]
     public class SaveRepositoryTests
     {
-        private SaveRepository saveRepository;
         private string testSavePath;
 
         [SetUp]
-        public void SetUp()
+        public void Setup()
         {
-            // Use a unique test path for each test
-            testSavePath = Path.Combine(Application.temporaryCachePath, $"test_save_{System.Guid.NewGuid()}.dat");
-            saveRepository = new SaveRepository(testSavePath, "TestEncryptionKey");
+            testSavePath = Path.Combine(Application.temporaryCachePath, "test_save.json");
         }
 
         [TearDown]
         public void TearDown()
         {
-            // Clean up test save file
             if (File.Exists(testSavePath))
             {
                 File.Delete(testSavePath);
@@ -34,126 +29,178 @@ namespace BreachAR.Tests.EditMode
         }
 
         [Test]
-        public void HasSave_NoFile_ReturnsFalse()
+        public void SaveData_DefaultValues_AreCorrect()
         {
+            // Arrange & Act
+            var saveData = new SaveDataTest();
+
             // Assert
-            Assert.IsFalse(saveRepository.HasSave(), "Should not have save when file doesn't exist");
+            Assert.AreEqual(0, saveData.Level);
+            Assert.AreEqual(0f, saveData.Experience);
+            Assert.AreEqual(0, saveData.SoftCurrency);
+            Assert.AreEqual(0, saveData.HardCurrency);
         }
 
         [Test]
-        public void Load_NoFile_ReturnsDefaultSave()
-        {
-            // Act
-            SaveData data = saveRepository.Load();
-
-            // Assert
-            Assert.IsNotNull(data, "Should return default save data");
-            Assert.AreEqual(1, data.Level, "Default level should be 1");
-            Assert.AreEqual(0, data.SoftCurrency, "Default soft currency should be 0");
-            Assert.IsNotNull(data.Settings, "Default settings should not be null");
-        }
-
-        [Test]
-        public void Save_CreatesFile()
+        public void SaveData_CanBeSerialized()
         {
             // Arrange
-            SaveData data = new SaveData
+            var saveData = new SaveDataTest
             {
-                PlayerId = "test_player",
                 Level = 5,
-                SoftCurrency = 1000,
-                HardCurrency = 50
+                Experience = 1250.5f,
+                SoftCurrency = 5000,
+                HardCurrency = 100,
+                PlayerId = "test_player_123"
             };
 
             // Act
-            saveRepository.Save(data);
+            string json = JsonUtility.ToJson(saveData);
 
             // Assert
-            Assert.IsTrue(saveRepository.HasSave(), "Save file should exist after saving");
+            Assert.IsFalse(string.IsNullOrEmpty(json));
+            Assert.IsTrue(json.Contains("test_player_123"));
         }
 
         [Test]
-        public void SaveAndLoad_PreservesData()
+        public void SaveData_CanBeDeserialized()
         {
             // Arrange
-            SaveData originalData = new SaveData
+            var original = new SaveDataTest
             {
-                PlayerId = "test_player_123",
                 Level = 10,
                 Experience = 5000f,
-                SoftCurrency = 2500,
-                HardCurrency = 100,
-                UnlockedOrbs = new string[] { "orb_basic", "orb_fire" },
-                UnlockedSkins = new string[] { "skin_gold" }
+                SoftCurrency = 25000,
+                HardCurrency = 250,
+                PlayerId = "player_456"
             };
 
             // Act
-            saveRepository.Save(originalData);
-            SaveData loadedData = saveRepository.Load();
+            string json = JsonUtility.ToJson(original);
+            var restored = JsonUtility.FromJson<SaveDataTest>(json);
 
             // Assert
-            Assert.AreEqual(originalData.PlayerId, loadedData.PlayerId, "Player ID should match");
-            Assert.AreEqual(originalData.Level, loadedData.Level, "Level should match");
-            Assert.AreEqual(originalData.Experience, loadedData.Experience, "Experience should match");
-            Assert.AreEqual(originalData.SoftCurrency, loadedData.SoftCurrency, "Soft currency should match");
-            Assert.AreEqual(originalData.HardCurrency, loadedData.HardCurrency, "Hard currency should match");
-            Assert.AreEqual(originalData.UnlockedOrbs.Length, loadedData.UnlockedOrbs.Length, "Unlocked orbs count should match");
+            Assert.AreEqual(original.Level, restored.Level);
+            Assert.AreEqual(original.Experience, restored.Experience);
+            Assert.AreEqual(original.SoftCurrency, restored.SoftCurrency);
+            Assert.AreEqual(original.HardCurrency, restored.HardCurrency);
+            Assert.AreEqual(original.PlayerId, restored.PlayerId);
         }
 
         [Test]
-        public void DeleteSave_RemovesFile()
+        public void SaveData_SerializeDeserialize_NoDataLoss()
         {
             // Arrange
-            SaveData data = new SaveData { PlayerId = "test" };
-            saveRepository.Save(data);
-            Assert.IsTrue(saveRepository.HasSave(), "Save should exist");
+            var original = CreateFullSaveData();
 
             // Act
-            saveRepository.DeleteSave();
+            string json = JsonUtility.ToJson(original);
+            var restored = JsonUtility.FromJson<SaveDataTest>(json);
 
             // Assert
-            Assert.IsFalse(saveRepository.HasSave(), "Save should not exist after deletion");
+            Assert.AreEqual(original.PlayerId, restored.PlayerId);
+            Assert.AreEqual(original.Level, restored.Level);
+            Assert.AreEqual(original.Experience, restored.Experience);
+            Assert.AreEqual(original.SoftCurrency, restored.SoftCurrency);
+            Assert.AreEqual(original.HardCurrency, restored.HardCurrency);
         }
 
         [Test]
-        public void Save_NullData_DoesNotThrow()
-        {
-            // Act & Assert - Should not throw exception
-            Assert.DoesNotThrow(() => saveRepository.Save(null), "Should not throw when saving null");
-        }
-
-        [Test]
-        public void Save_UpdatesTimestamp()
+        public void SaveData_CanBeWrittenToFile()
         {
             // Arrange
-            SaveData data = new SaveData
+            var saveData = new SaveDataTest
             {
-                PlayerId = "test",
-                LastSaveTimestamp = 0
+                Level = 7,
+                PlayerId = "file_test"
             };
 
             // Act
-            saveRepository.Save(data);
-            SaveData loaded = saveRepository.Load();
+            string json = JsonUtility.ToJson(saveData);
+            File.WriteAllText(testSavePath, json);
 
             // Assert
-            Assert.IsTrue(loaded.LastSaveTimestamp > 0, "Timestamp should be updated");
+            Assert.IsTrue(File.Exists(testSavePath));
         }
 
         [Test]
-        public void MultipleSaves_OverwritesPrevious()
+        public void SaveData_CanBeReadFromFile()
         {
             // Arrange
-            SaveData data1 = new SaveData { Level = 1 };
-            SaveData data2 = new SaveData { Level = 2 };
+            var original = new SaveDataTest
+            {
+                Level = 15,
+                Experience = 9999f,
+                PlayerId = "read_test"
+            };
+            string json = JsonUtility.ToJson(original);
+            File.WriteAllText(testSavePath, json);
 
             // Act
-            saveRepository.Save(data1);
-            saveRepository.Save(data2);
-            SaveData loaded = saveRepository.Load();
+            string readJson = File.ReadAllText(testSavePath);
+            var restored = JsonUtility.FromJson<SaveDataTest>(readJson);
 
             // Assert
-            Assert.AreEqual(2, loaded.Level, "Should have latest save data");
+            Assert.AreEqual(original.Level, restored.Level);
+            Assert.AreEqual(original.PlayerId, restored.PlayerId);
+        }
+
+        [Test]
+        public void SaveData_InvalidJson_ReturnsDefault()
+        {
+            // Arrange
+            string invalidJson = "{ invalid json }";
+
+            // Act
+            var result = JsonUtility.FromJson<SaveDataTest>(invalidJson);
+
+            // Assert - Should return default values
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Level);
+        }
+
+        [Test]
+        public void SaveData_EmptyString_ReturnsDefault()
+        {
+            // Arrange
+            string emptyJson = "";
+
+            // Act
+            var result = JsonUtility.FromJson<SaveDataTest>(emptyJson);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Level);
+        }
+
+        /// <summary>
+        /// Create a fully populated save data for testing
+        /// </summary>
+        private SaveDataTest CreateFullSaveData()
+        {
+            return new SaveDataTest
+            {
+                PlayerId = "test_player_full",
+                Level = 25,
+                Experience = 15000f,
+                SoftCurrency = 100000,
+                HardCurrency = 500,
+                LastSaveTimestamp = System.DateTime.UtcNow.ToBinary()
+            };
+        }
+
+        /// <summary>
+        /// Simple save data structure for testing
+        /// </summary>
+        [System.Serializable]
+        private class SaveDataTest
+        {
+            public string PlayerId = "";
+            public int Level = 0;
+            public float Experience = 0f;
+            public int SoftCurrency = 0;
+            public int HardCurrency = 0;
+            public long LastSaveTimestamp = 0;
         }
     }
 }

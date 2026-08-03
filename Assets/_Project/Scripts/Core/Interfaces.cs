@@ -63,11 +63,14 @@ namespace BreachAR.Core
     [System.Serializable]
     public class ScannedSurface
     {
+        public string SurfaceId;
         public SurfaceType Type;
         public Vector3 Center;
+        public Vector3 Position;
         public Vector3 Normal;
         public float Area;
         public Bounds Bounds;
+        public Transform Anchor;
     }
 
     /// <summary>
